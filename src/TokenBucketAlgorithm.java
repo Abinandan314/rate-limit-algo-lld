@@ -4,8 +4,8 @@ import java.time.temporal.ChronoUnit;
 public class TokenBucketAlgorithm {
     private Long tokens;
     private Instant lastRecordedTime;
-    private Integer rate;
-    private Long capacity;
+    private final Integer rate;
+    private final Long capacity;
 
     public TokenBucketAlgorithm(Long tokens, Instant lastRecordedTime, Integer rate, Long capacity) {
         this.tokens = tokens;
@@ -14,15 +14,16 @@ public class TokenBucketAlgorithm {
         this.capacity = capacity;
     }
 
-    private void refillBucket(){
+    private synchronized void refillBucket(){
         Instant currentTime = Instant.now();
-        long timeInterval = ChronoUnit.MINUTES.between(currentTime,this.lastRecordedTime);
+        long timeInterval = ChronoUnit.MINUTES.between(this.lastRecordedTime,currentTime);
         if (timeInterval <= 0) return;
         tokens += (timeInterval * rate);
         tokens = Math.min(tokens,capacity);
+        lastRecordedTime = currentTime;
     }
 
-    public boolean allowRequest(int tokenCount){
+    public synchronized boolean allowRequest(int tokenCount){
         refillBucket();
         if (tokens - tokenCount < 0) return false;
 
